@@ -1,0 +1,29 @@
+#+TITLE: 用Makefile搭建博客
+#+AUTHOR: MaskRay
+#+DATE: 2011-07-12
+#+OPTIONS: toc:nil num:nil
+#+LATEX_CMD: xelatex
+
+几乎不会 HTML，不会使用 Perl、Python 的库，
+不会 PHP 和 Ruby，不懂 JavaScript，但我也想搭个博客。
+
+首先选择的是 WordPress，基本上是照着 [[http://forum.ubuntu.org.cn/viewtopic.php?f=43&t=317219]]
+做的，在 _tusooa_ 和 _phoenixlzx_ 的大力帮助下，基本上算是搭起来了。
+但因为觉得 WordPress 繁琐，想用标记语言，以及其他一些原因，
+打算换用 DokuWiki。DokuWiki 的配置也出现了一些问题，我怎么也无法让 BlogTNG 插件正常工作
+（一直显示空白页）。
+
+作为一个 Emacs 用户，得用 Org Mode 做标记语言，发现了 blorgit，但它是 Ruby 写的，
+我配置不来。再看默认页面，不怎么样，于是放弃了这个。最后选择了用 Makefile 自己写。
+
+Makefile 的设计如下：
+- 创建目录 =年/月/日/= 来表示当天写的文章
+- =年/月/日/= 下创建 .org，用于生成 .html
+- =年/= 下创建 =titles-月= 缓存这个月的所有标题
+- 用这些 =titles-月= 来生成文章列表
+
+Makefile 还有一个问题就是目录的 mtime 是不会因为下面的文件的变化而改变的，
+所以让目标 =titles-月= 依赖 =年/月/= 会有些问题。可行的解决方案是用 inotify
+检测文件变化，自动 touch 那些目录。
+
+[[/Makefile][Makefile 下载]]

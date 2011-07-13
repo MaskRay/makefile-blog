@@ -1,0 +1,57 @@
+#+TITLE: 用expect连接无线网络
+#+AUTHOR: MaskRay
+#+DATE: 2011-07-10
+#+OPTIONS: toc:nil num:nil
+#+LATEX_CMD: xelatex
+
+我的无线网卡是 Broadcom BCM57780，这个东西，Linux 下的无线驱动做得非常烂。
+以前我用 Gentoo Portage 中的 net-wireless/broadcom-sta，后来听 _microcai_ 的，
+直接在 menuconfig 里配置。这个驱动对应的模块名称是 brcmsmac，必须编译成模块（编译进内核的话，我没成功打开无线过）。它还需要 firmware，
+而且路径是定死的（使用其他名称是不行的，至少我没成功）。它在 dmesg 中的信息非常简略，
+如果你 firmware 的路径配置错的话，每次启动有一定几率 dmesg 会提示你正确的路径（这个……）。
+
+这个驱动，偶尔会造成 kernel panic，掉线也挺频繁的，其实要连线都很困难……
+
+以前我都是用
+=wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf=
+后在 =wpa_cli= 里输入 select\_network，然后间断性输入 status 希望出现一个
+wpa\_state=CONNECTED，这样就连上了。如果十几秒还没连上的话，就不用指望再过几分钟它会连上。
+我一般是 kill 掉 wpa\_supplicant 再来。有时如此几次还是不行，
+我就用 modprobe 重新加载 brcmsmac.ko，如果再不行我就该重启了。
+
+这个过程比较麻烦，就写了一个 *Expect* 脚本来做这事：
+
+#+BEGIN_SRC tcl
+#!/bin/sh
+# -*- tcl -*- \
+exec tclsh "$0" "$@"
+
+package require Expect
+
+for {set i 0} {$i < 5} {incr i} {
+    catch {system wpa_supplicant -B -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf}
+    catch {system wpa_cli select_network 0}
+    
+    for {set try 0} {$try < 12} {incr try} {
+        spawn wpa_cli status
+        expect {
+            -re {wpa_state=(.*)\r} {
+                if {$expect_out(1,string) eq "COMPLETED"} {
+                    system dhcpcd wlan0
+                    exit
+                }
+                sleep 0.7
+            }
+            -re .+ exp_continue
+            default
+        }
+        wait
+    }
+    catch {system killall wpa_supplicant}
+    catch {system modprobe -r brcmsmac}
+    catch {system modprobe brcmsmac}
+}
+#+END_SRC
+
+这段脚本用了一个技巧，就是 sh 的 # 注释是不续行的，而 tcl 的是续行的。如果用 sh 执行，
+就会执行 exec 那行，用 tclsh 来解释这个脚本。tclsh 则会忽略这一行。

@@ -1,0 +1,31 @@
+#+TITLE: shell中方便目录跳转的几个技巧
+#+AUTHOR: MaskRay
+#+DATE: 2011-07-10
+#+OPTIONS: toc:nil num:nil
+#+LATEX_CMD: xelatex
+
+我不用 gui 的文件管理器，一般都是 shell+utilities，有时也会用用 emacs 的 dired，要让 shell 跳转目录比 gui 方便，还是得做些配置。
+
+比较显然的配置是添加回到上级目录的 alias：
+#+BEGIN_SRC shell
+alias ..='cd ..'
+#+END_SRC
+甚至是再上级目录的，再再上级目录的，……：
+#+BEGIN_SRC shell
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+#+END_SRC
+（此处原来有误，感谢 _tusooa_ 指正）
+
+如果需要在多个目录间来回切换，那么 directory stack 能提供很大的方便。zsh 的配置如下：
+#+BEGIN_SRC shell
+setopt auto_pushd # 自动 pushd=
+zmodload -i zsh/complist # 提供 menu-list 的补全
+zstyle ':completion:*' menu select=2 # 可以用 tab 等选择菜单中的补全候选项
+#+END_SRC
+然后依次输入 c d - TAB 就能看到效果。
+
+然后是神器 autojump，输入一个模式，它会跳到历史中匹配该模式的，并且访问最频繁的那个目录。它的主页是 http://github.com/joelthelion/autojump，它还提供了用于 zsh 补全的模块。
+
+另一种不需要外设的方法是使用环境变量 CDPATH，像 PATH 那样的，目录用 : 分隔。若当前目录下没有指定的目录，就会自动从 CDPATH 指定的目录中找。此法还有个好处是 CDPATH 是 POSIX 规定的，可移植性较高。
