@@ -4,26 +4,65 @@
 #+OPTIONS: toc:nil num:nil
 #+LATEX_CMD: xelatex
 
-几乎不会 HTML，不会使用 Perl、Python 的库，
-不会 PHP 和 Ruby，不懂 JavaScript，但我也想搭个博客。
+* 缘起
+
+我几乎不会 HTML，不会使用 Perl、Python 的库，
+不会 PHP 和 Ruby，不懂 JavaScript，但也想搭个博客。
+
+** 尝试 WordPress
 
 首先选择的是 WordPress，基本上是照着 [[http://forum.ubuntu.org.cn/viewtopic.php?f=43&t=317219]]
-做的，在 _tusooa_ 和 _phoenixlzx_ 的大力帮助下，基本上算是搭起来了。
-但因为觉得 WordPress 繁琐，想用标记语言，以及其他一些原因，
-打算换用 DokuWiki。DokuWiki 的配置也出现了一些问题，我怎么也无法让 BlogTNG 插件正常工作
-（一直显示空白页）。
+做的，在 _tusooa_ 和 _phoenixlzx_ 的大力帮助下，注册了个 .tk 的域名和一个免费服务器，
+基本上算是搭起来了。不过有些不满意的地方，最讨厌的是它不是用标记语言写的，有些繁琐。
+
+** 尝试 DokuWiki
+
+_MeaCulpa_ 推荐使用 DokuWiki，看了它的一些介绍，觉得这个标记语言还不错。
+但要让它变成 blog，还是有不少工作要做。要装一个名为 BlogTNG 的插件，我装了之后就只显示空白页了，
+用 findbad.php 也找不出原因。也用了 _lainme_ 的可以正常工作的
+BlogTNG 插件，但在我这儿就是不行。无奈之下还是放弃了。
+
+* 自己写 Makefile
 
 作为一个 Emacs 用户，得用 Org Mode 做标记语言，发现了 blorgit，但它是 Ruby 写的，
-我配置不来。再看默认页面，不怎么样，于是放弃了这个。最后选择了用 Makefile 自己写。
+我配置不来，再看默认页面，不怎么样，于是这个也放弃了。最后选择了用 Makefile 自己写。
 
-Makefile 的设计如下：
+** 基本思路
+
+.org 存放实际写的文章，用于生成 .html，首页 index.html 是文章列表。
+还要使用第三方的评论系统。
+
+** 简单设计
+
+比较简单的设计是让 =%.html= 依赖 =%.org= ，
+写个脚本用 emacs 的 org-export-as-html 生成。
+
+index.html 由三部份组成，页眉，页脚和中间的文章标题列表。可以让 index.html 依赖
+所有形如 =年/月/日/xx.html= 的文件。这样做易于实现，但是检查 index.html 是否过期
+需要检查所有文章的修改时间，效率较低。
+
+** 目前采用的方案
+
+目录设计如下：
 - 创建目录 =年/月/日/= 来表示当天写的文章
 - =年/月/日/= 下创建 .org，用于生成 .html
 - =年/= 下创建 =titles-月= 缓存这个月的所有标题
-- 用这些 =titles-月= 来生成文章列表
 
-Makefile 还有一个问题就是目录的 mtime 是不会因为下面的文件的变化而改变的，
-所以让目标 =titles-月= 依赖 =年/月/= 会有些问题。可行的解决方案是用 inotify
-检测文件变化，自动 touch 那些目录。
+Makefile 的主要规则如下：
+- =年/titles-月= 依赖 =年/月/= ，如果该目标需要重建，
+  那么尝试重建 =年/月/日/= 下的所有 .html。然后把这些 .html 的标题抽取出来，
+  写入 =年/titles-月=
+- =%.html= 依赖 =%.org= ，需要用 Org Mode 根据 .org 生成 .html
+- =index.html= 不直接依赖所有文章，而是依赖 =年/titles-月= ，以及页头、页脚。
 
-[[/Makefile][Makefile 下载]]
+当 =年/月/日/= 创建后， =年/titles-月= 就会过期，重建
+=年/月/日/= 下的所有过期的 .html，并且生成 =年/titles-月= ，进而
+重建 =index.html= 。
+
+注意到这种设计把目录作为了依赖，我们要知道目录的 mtime 是不会因为下面的文件的修改而改变的。
+所以当 =年/月/日/a.org= 修改之后， =年/月/日/= 和 =年/月/= 的 mtime 都是不会变化的。
+所以需要让目录随着其下文件的修改而更新修改时间。
+
+我想到的办法是用 inotify，当 =年/月/日/a.org= 修改之后，自动 touch =年/月/= 。
+
+[[../../../Makefile][Makefile 下载]]
