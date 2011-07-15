@@ -1,0 +1,63 @@
+body {
+    font-family: Arial;
+    font-size: 10pt;
+}
+
+.headerbox {
+    border: 1px solid black;
+    padding: 0.3em;
+    margin: 0.2em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.flattrbox {
+    border: 1px solid black;
+    padding: 0.3em;
+    display: inline-block;
+    float: right;
+}
+
+a:link {
+    color: #363372;
+}
+
+a:visited {
+    color: #5450ae;
+}
+
+.outline-2 {
+    border: 1px dotted black;
+    padding: 0.8em;
+    margin-bottom: 1em;
+    background-color: white;
+    height: 100%;
+    float: none;
+}
+
+#postamble {
+    font-size: small;
+    float: none;
+}
+
+.figure {
+    border: 1px solid black;
+    float: right;
+    background-color: white;
+}
+
+div.figure p {
+    font-weight: bold;
+    padding: 0.0em;
+    margin: 0.0em;
+}
+
+
+pre {
+    border: 1px solid black;
+}
+
+code {
+    font-style: oblique;
+}

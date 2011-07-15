@@ -1,8 +1,9 @@
 #+TITLE: 用expect连接无线网络
 #+AUTHOR: MaskRay
 #+DATE: 2011-07-10
-#+OPTIONS: toc:nil num:nil
-#+LATEX_CMD: xelatex
+#+OPTIONS: toc:nil num:nil f:nil
+
+* 
 
 我的无线网卡是 Broadcom BCM57780，这个东西，Linux 下的无线驱动做得非常烂。
 以前我用 Gentoo Portage 中的 net-wireless/broadcom-sta，后来听 _microcai_ 的，

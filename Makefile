@@ -1,7 +1,7 @@
 ECHO := /bin/echo
-HEADER := header.html
-FOOTER := footer.html
-ARTICLE_FOOTER := article_footer.html
+FOOTER := footer.org
+HEADER := header.org
+INDEX_HEADER := index_header.org
 MONTHS := $(wildcard 20??/[0-9][0-9])
 
 define create-titles
@@ -11,17 +11,18 @@ $1/titles-$2: $1/$2
 	sort -r  > $$@
 endef
 
-index.html: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm))) $(HEADER) $(FOOTER)
-	{ cat $(HEADER) && \
-	for f in `$(ECHO) $(filter-out %.html,$^) | xargs -n 1 | sort -r`; do \
-		awk -F'\t' '{print "     <li>&raquo; <a href="$$1">"$$2"</a>&nbsp;&nbsp;&nbsp;(<a href=/"$$1"#disqus_thread>comments</a>)</li>"; sub(/\/[^\/]*.html/,"",$$1); print "<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>posted on "$$1"</span></li>"}' $$f; done; \
-	cat $(FOOTER); } > $@
+index.html:
+
+index.org: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm))) $(INDEX_HEADER)
+	{ cat $(INDEX_HEADER); \
+	for f in `$(ECHO) $(filter-out %.org,$^) | xargs -n 1 | sort -r`; do \
+		awk -F'\t' '{print "\n- [[./"$$1"]["$$2"]]"; sub(/\/[^\/]*.html/,"",$$1); print "\n  posted on "$$1}' $$f; \
+	done; } > $@
 
 $(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
 
-%.html: %.org $(ARTICLE_FOOTER)
-	emacs -l org-xelatex.el --batch --eval '(progn (setq user-full-name "Ray Song")(setq user-mail-address "emacsray@gmail.com")(find-file "$<")(org-export-as-html 3))'
-	$(ECHO) -e "H\ng/<div id=\"postamble\">/.-1r !sed -e \"s!<<<1>>>!$@!\" -e 's!<<<2>>>!http://maskray.tk/$@!' $(ARTICLE_FOOTER)\nw" | ed -s $@
+%.html: %.org $(FOOTER) $(HEADER)
+	emacs -l org-xelatex.el --batch --eval '(progn (find-file "$<") (beginning-of-buffer)(insert-file "$(abspath $(HEADER))") (shell-command-on-region (point-max) (point-max) "[ $@ != index.html ] && sed -e \"s!<<<1>>>!$@!\" -e \"s!<<<2>>>!http://maskray.tk/$@!\" $(abspath $(FOOTER))" (buffer-name) t) (org-export-as-html 3) )'
 
 .PHONY: upload inotify
 upload:
