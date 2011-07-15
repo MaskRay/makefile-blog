@@ -1,9 +1,9 @@
-#+TITLE: 用expect连接无线网络
+#+TITLE: 用Expect连接无线网络
 #+AUTHOR: MaskRay
 #+DATE: 2011-07-10
 #+OPTIONS: toc:nil num:nil f:nil
 
-* 
+* 垃圾的无线网卡驱动
 
 我的无线网卡是 Broadcom BCM57780，这个东西，Linux 下的无线驱动做得非常烂。
 以前我用 Gentoo Portage 中的 net-wireless/broadcom-sta，后来听 _microcai_ 的，
@@ -20,12 +20,12 @@ wpa\_state=CONNECTED，这样就连上了。如果十几秒还没连上的话，
 我一般是 kill 掉 wpa\_supplicant 再来。有时如此几次还是不行，
 我就用 modprobe 重新加载 brcmsmac.ko，如果再不行我就该重启了。
 
-这个过程比较麻烦，就写了一个 *Expect* 脚本来做这事：
+* 用 Expect 自动化连接过程
 
-#+BEGIN_SRC tcl
+#+BEGIN_SRC tcl -n
 #!/bin/sh
-# -*- tcl -*- \
-exec tclsh "$0" "$@"
+# -*- tcl -*- \            (ref:1)
+exec tclsh "$0" "$@"       (ref:2)
 
 package require Expect
 
@@ -54,5 +54,5 @@ for {set i 0} {$i < 5} {incr i} {
 }
 #+END_SRC
 
-这段脚本用了一个技巧，就是 sh 的 # 注释是不续行的，而 tcl 的是续行的。如果用 sh 执行，
-就会执行 exec 那行，用 tclsh 来解释这个脚本。tclsh 则会忽略这一行。
+注意 [[(1)]] [[(2)]] 这两行，这里用了一个技巧，就是 sh 的 # 注释是不续行的，而 Tcl 的是续行的(Makefile 也续行)。如果用 sh 执行，
+就会执行行 [[(2)]]，用 tclsh 来解释这个脚本。tclsh 则会忽略行 [[(2)]]。
