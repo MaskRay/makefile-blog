@@ -7,7 +7,7 @@ MONTHS := $(wildcard 20??/[0-9][0-9])
 define create-titles
 $1/titles-$2: $1/$2
 	$(MAKE) $$(foreach h,$$(patsubst %.org,%.html,$$(wildcard $1/$2/*/*.org)),$$h)
-	{ $$(foreach i,$$(wildcard $1/$2/*/*.html),$(ECHO) -ne $$i\\t;grep -Po '(?<=<title>)[^<]*(?=</title>)' $$i;) } | \
+	{ $$(foreach i,$$(wildcard $1/$2/*/*.org),$(ECHO) -ne $$(patsubst %.org,%.html,$$i)\\t;grep '#+TITLE:' $$i | cut -d' ' -f2-;) } | \
 	sort -r  > $$@
 endef
 
@@ -16,7 +16,7 @@ index.html:
 index.org: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm))) $(INDEX_HEADER)
 	{ cat $(INDEX_HEADER); \
 	for f in `$(ECHO) $(filter-out %.org,$^) | xargs -n 1 | sort -r`; do \
-		awk -F'\t' '{print "\n- [[./"$$1"]["$$2"]]"; sub(/\/[^\/]*.html/,"",$$1); print "\n  posted on "$$1}' $$f; \
+		awk -F'\t' '{print "\n- [[./"$$1"]["$$2"]]"; sub(/\/[^\/]*\.html/,"",$$1); print "\n  posted on "$$1}' $$f; \
 	done; } > $@
 
 $(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
@@ -29,4 +29,4 @@ upload:
 	rsync -a --exclude auto * maskray@maskray.tk:/var/www/maskray/
 
 inotify:
-	{ inotifywait -e modify -m -r . --format %w | xargs -I % sh -c "touch \`dirname %\`"; } &
+	inotifywait -e modify -m -r . --format %w 2>&- | xargs -I % sh -c "touch \`dirname %\`" >&- 2>&- &

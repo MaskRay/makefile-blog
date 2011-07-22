@@ -1,0 +1,84 @@
+#+TITLE: 用rss2email阅读feeds
+#+AUTHOR: MaskRay
+#+DATE: 2011-07-20
+#+OPTIONS: toc:nil num:nil f:nil
+
+* 
+
+很久没用 rss 的阅读器了，以前曾用过 /emacs/ 的 /newsticker/ ，不支持
+/HTML/ 。也用过 /Google Reader/ ，打开速度太慢，而且对 /Pentadactyl/ 不友好。
+
+* 把 feeds 转成邮件来阅读
+
+我的想法是找一款工具，把 feeds 转换成邮件，由本地的 *procmail* 处理（归类），
+然后再用 *mutt* 阅读。
+
+** rss2email
+
+/rss2email/ 就是这样一个能把 feeds 转成邮件的工具， /Python/ 写的，
+可以通过 /SMTP/ 把邮件投递给服务器或者把邮件转交给 /MTA/ 。
+可惜的是它没法像 /getmail/ 或是 /fetchmail/ 那样，
+指定用于处理邮件的程序。
+
+它的使用还是比较简单的，配置只有二歩：
+- *r2e new user@example.org* ，转换得到的 feeds 默认投递到 =user@example.org=
+- *r2e add http://feed.url/somewhere.rss* ，订阅一个源
+
+以后只要运行 *r2e run* 就能把新的 feeds 转成邮件发送给你配置时设置的邮箱。
+我把这条命令写到了 =crontab= 里。
+
+** 原来的设想
+
+我最初设想是安装个 /MTA/ ，比如 /postfix/ ， *r2e* 把邮件交给 /MTA/ ， /MTA/ 把收到的邮件交给
+*procmail* 。但这样略显麻烦， /MTA/ 的配置挺麻烦的，还得让它开机自动启动。
+
+** 能否绕过 /MTA/ 呢
+
+我决定修改 /rss2email/ 的源码来避免 /MTA/ 。
+/rss2email/ 的源码是比较简单的，在 =/usr/lib/python2.7/site-packages/rss2email/main.py=
+中搜索 =sendmail= 就找到了这样一行：
+#+begin_src python
+p = subprocess.Popen(["/usr/sbin/sendmail", recipient], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+#+end_src
+
+不难看出 recipient 就是指定的邮箱。比如 =recipient= 是 =ray@localhost= ，
+它会调用 */usr/sbin/sendmail ray@localhost* 来把邮件转交给 *sendmail* (/MTA/)。
+
+只要把这行改成：
+#+begin_src python
+p = subprocess.Popen(["/usr/bin/procmail", "-d", recipient], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+#+end_src
+*r2e* 就会直接把邮件交给 *procmail* 了。
+
+** 具体配置
+
+- 修改 =/usr/lib/python2.7/site-packages/rss2email/main.py=
+- *r2e new ray* ， =ray= 是我的用户名
+- *r2e add* http://feed.url1/somewhere.rss
+- *r2e add* http://feed.url2/somewhere.rss
+- *r2e add* http://feed.url3/somewhere.rss
+- 配置 *procmail* ，根据邮件头的 =User-Agent= 和 =X-RSS-Feed= 信息来决定投递到哪个 =maildir/mbox= 。
+- 把 *r2e run* 加入 =crontab=
+
+下面是我添加到 =~/.procmailrc= 中的内容：
+#+begin_src none
+:0
+* ^User-Agent: rss2email
+{
+  :0
+  * ^X-RSS-Feed: http://news.ycombinator.com/rss
+  rss/hacker-news/
+
+  :0
+  * ^X-RSS-Feed: http://solidot.org.feedsportal.com/c/33236/f/556826/index.rss
+  rss/solidot/
+
+  :0
+  * ^X-RSS-Feed: http://feeds.feedburner.com/linuxtoy
+  rss/linuxtoy/
+
+  :0
+  * ^X-RSS-Feed: http://jandan.net/feed
+  rss/jandan/
+}
+#+end_src none

@@ -1,0 +1,84 @@
+#+TITLE: 用Makefile搭建博客-2
+#+AUTHOR: MaskRay
+#+DATE: 2011-07-12
+#+OPTIONS: toc:nil num:nil f:nil
+
+* 缘起
+
+前一篇 [[./12/blogging-with-makefile.html][用Makefile搭建博客]] 说到我用 *inotifywait* 监控目录下文件的写操作来更新目录的修改时间，
+以后只要把 *make inotify* 放到启动脚本中就行了 。但当时就发现了一个问题，
+一直拖到今天才解决掉。
+
+** /GoboLinux/ /Scripts/ 包中的 /ColorMake/
+
+先从 /ColorMake/ 说起。 /GNU Make/ 的颜色是很单调的，我一般用 /GoboLinux/ 的
+包 /Scripts/ 里的 /ColorMake/ 来给 *make* 上色。而这个 /ColorMake/ 实际
+上是写了一个 *mtail* 的配置文件 =ColorMake.mtailrc= ，把 *make* 的输出
+管道给 *mtail* 来上色。可以参看：
+http://forum.ubuntu.org.cn/viewtopic.php?f=56&t=285953 。我之前则是用的
+http://bre.klaki.net/programs/colormake/ 里的 *colormake.pl* 脚本来上色
+的。
+
+我把 *ColorMake.mtailrc* 保存为 =~/bin/ColorMake.mtailrc= ，另外写了个 wrapper，
+保存到 =~/bin/mk= ，内容如下：
+#begin_src sh
+#!/bin/sh
+/usr/bin/make "$@" 2>&1 | mtail -q --config ~/bin/ColorMake.mtailrc
+#end_src
+意思就是把 *mk* 的参数全部传递给 *make* ， *make* 的 stdout stderr 全
+部管道给 *mtail* 来上色。
+
+另外， =~/bin= 在我的环境变量 *PATH* 中。
+
+* 产生问题的命令
+
+先来看我的 [[/Makefile][Makefile]]，只要看 =inotify= 伪目标，其他的可以忽略掉。
+之前 =inotify= 的规则是 *inotifywait -e modify -m -r . --format %w | xargs -I % sh -c "touch \`dirname %\`" &*
+
+*make inotify* 运行得非常正常， *inotify* 和 *xargs* 在后台执行；但如
+果执行 *mk inotify* ，问题就来了，终端会被占着，无法再执行其他命令了。
+
+* 分析
+
+** make inotify
+
+先来看执行 *make inotify* 会发生什么，不妨假设交互用的 shell 是 /Zsh/ ，
+这里用 /Bash/ 效果也是一样的。
+
+- *zsh* 进程产生一个 *make* 进程
+- *make* 进程执行重建 =inotify= 的规则，即产生一个进程执行 *inotifywait -e modify -m -r . --format %w | xargs -I % sh -c "touch \`dirname %\`" &*
+
+不妨用 /Lisp/ 来表示进程树，那么这些进程的关系如下： =(zsh (make (inotifywait) (xargs)))= 。
+一对 *圆括号* 代表 *进程* ，圆括号第一个元素是 *进程名* ，其余元素代表 *子进程* 。
+
+接着，
+- *make* 退出，因为规则执行完了
+- *zsh* 检测到它的子进程 *make* 退出，又可以执行其他命令了
+
+** mk inotify
+
+- *zsh* 进程产生 *mk* ，其实是用 */bin/sh* 解释 *mk* ，这里就简写成 *mk*
+- *mk* 产生 *make* 和 *mtail* ，其中管道的一端是 *make* 的 =fd1= 、 =fd2= ，另一端是 *mtail* 的 =fd0=
+- *make* 产生 *inotifywait* 和 *xargs*
+
+第三步中， *make* 的文件描述符被 *inotifywait* 和 *xargs* 继承，
+由于 *inotifywait* 和 *xargs* 用另一根管道而把 =fd1= 关闭了，
+所以现在原管道的两端分别是：
+- *make* 的 =fd1= 、 =fd2= ； *inotifywait* 的 =fd2= ； *xargs* 的 =fd1= 、 =fd2=
+- *mtail* 的 =fd0=
+
+现在的进程树是： =(zsh (mk (make (inotifywait) (xargs)) (mtail)))= 
+
+接着，
+- *make* 退出，因为规则执行完了
+- 因为管道的写端描述符没有全部关闭， *mtail* 不会读到 =eof= 退出，而是等待管道读端的数据
+- *mk* 也不会退出，因为它的某个子进程 *mtail* 没有退出
+- *zsh* 未检测到 *mk* 的退出，所以终端被占用了，没法执行其他命令
+
+* 解决方案
+
+由前面的分析可以看出，只要让 *mtail* 退出，那么 *mk* 会跟着退出，终端就不会被占用了。
+而要让 *mtail* 退出，就要让它读到 =eof= 退出，我们只要让 *make* 产生进程时不要把管道的写端描述符
+传递给 *inotifywait* 和 *xargs* ，但是这个据我所知是做不到的。
+但我们可以让 *inotifywait* 和 *xargs* 立刻把相应写端描述符关闭，
+这个很简单，用 *inotifywait -e modify -m -r . --format %w 2>&- | xargs -I % sh -c "touch \`dirname %\`" >&- 2>&- &* 代替原来的命令就行了。
