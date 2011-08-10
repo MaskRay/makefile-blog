@@ -14,7 +14,7 @@ endef
 .SUFFIXES:
 .PHONY: all upload inotify
 
-all: link.html tags/all.html $(patsubst %.m4,%.html,$(wildcard tags/*.m4))
+all: index.html tags/all.html $(patsubst %.m4,%.html,$(wildcard tags/*.m4))
 
 tags/all.m4: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
 	for f in $?; do \
@@ -32,11 +32,11 @@ tags/all.m4: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
 		awk '{print "LI("$$1","$$2")"}' $$f; \
 	done > $@
 
-tags/%.html: tags_header.m4 tags/%.m4 tags_footer.m4
+tags/%.html: m4/tag_header.m4 tags/%.m4 m4/tag_footer.m4
 	m4 $^ > $@
 
-link.html: link.m4
-	m4 $< > $@
+index.html: m4/index_header.m4 tags.m4 m4/index_footer.m4
+	m4 $^ > $@
 
 $(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
 
