@@ -1,6 +1,7 @@
 #+TITLE: 用rss2email阅读feeds
 #+AUTHOR: MaskRay
 #+DATE: 2011-07-20
+#+TAGS: email software
 #+OPTIONS: toc:nil num:nil f:nil
 
 * 

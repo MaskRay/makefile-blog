@@ -1,6 +1,7 @@
 #+TITLE: 用Expect连接无线网络
 #+AUTHOR: MaskRay
 #+DATE: 2011-07-10
+#+TAGS: expect network
 #+OPTIONS: toc:nil num:nil f:nil
 
 * 垃圾的无线网卡驱动

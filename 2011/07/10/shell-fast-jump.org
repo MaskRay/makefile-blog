@@ -1,6 +1,7 @@
 #+TITLE: shell中方便目录跳转的几个技巧
 #+AUTHOR: MaskRay
 #+DATE: 2011-07-10
+#+TAGS: shell tips
 #+OPTIONS: toc:nil num:nil f:nil
 
 * alias

@@ -1,6 +1,7 @@
 #+TITLE: 用Makefile搭建博客-2
 #+AUTHOR: MaskRay
 #+DATE: 2011-07-12
+#+TAGS: makefile shell blog
 #+OPTIONS: toc:nil num:nil f:nil
 
 * 缘起

@@ -3,6 +3,8 @@ body {
     font-size: 10pt;
 }
 
+.title  { text-align: center; }
+
 .headerbox {
     border: 1px solid black;
     padding: 0.3em;
