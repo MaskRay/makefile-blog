@@ -1,20 +1,31 @@
 ECHO := /bin/echo
-FOOTER := footer.org
-HEADER := header.org
-INDEX_HEADER := index_header.org
 MONTHS := $(wildcard 20??/[0-9][0-9])
 
+TAG_POSTS := layout/tag_posts.m4
+DEFAULT := layout/default.m4
+POST := layout/post.m4
+TAGS := layout/tags.m4
+
+SRCS = $(wildcard $(foreach s,org mdown,$1/$2/*/*.$s))
+HTML = $(addsuffix .html,$(basename $1))
+HTMLS = $(call HTML,$(call SRCS,$1,$2))
+
 define create-titles
-$1/titles-$2: $1/$2
-	$(MAKE) $$(foreach h,$$(patsubst %.org,%.html,$$(wildcard $1/$2/*/*.org)),$$h)
-	{ $$(foreach i,$$(wildcard $1/$2/*/*.org),$(ECHO) -ne '/$$(patsubst %.org,%.html,$$i) ';$(ECHO) -ne `grep -F '#+TITLE:' $$i | cut -d' ' -f2-;grep -F '#+TAGS:' $$i | cut -d' ' -f2-`;$(ECHO);) } | \
+$1/titles-$2: $1/$2 $(DEFAULT) $(POST)
+	$(MAKE) $$(foreach h,$$(call HTMLS,$1,$2),$$h)
+	{ $$(foreach i,$$(call SRCS,$1,$2),$(ECHO) -ne '/$$(call HTML,$$i) ';$(ECHO) -ne `grep -F '#+TITLE:' $$i | cut -d' ' -f2-;grep -F '#+TAGS:' $$i | cut -d' ' -f2-`;$(ECHO);) } | \
 	sort -r  > $$@
 endef
 
 .SUFFIXES:
 .PHONY: all upload inotify
 
-all: index.html tags/all.html $(patsubst %.m4,%.html,$(wildcard tags/*.m4))
+all: index.html $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
+
+$(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
+
+$(DEFAULT): $(TAGS)
+	touch $@
 
 tags/all.m4: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
 	for f in $?; do \
@@ -32,19 +43,36 @@ tags/all.m4: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
 		awk '{print "LI("$$1","$$2")"}' $$f; \
 	done > $@
 
-tags/%.html: m4/tag_header.m4 tags/%.m4 m4/tag_footer.m4
-	m4 $^ > $@
+tags/%.html: tags/%.m4 $(DEFAULT) $(TAG_POSTS)
+	m4 -P -D_TAG=$* -D_POSTS='m4_include($<)' $(TAG_POSTS) > /tmp/temp
+	m4 -P -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
-index.html: m4/index_header.m4 tags.m4 m4/index_footer.m4
-	m4 $^ > $@
+index.html: | tags/all.html
+	ln -sf tags/all.html $@
 
-$(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
+%.html:: %.mdown $(DEFAULT) $(POST)
+	TAGS=`grep '#+TAGS:' $< | cut -d' ' -f2- | tr ' ' ,`; \
+	TITLE=`grep '#+TITLE:' $< | cut -d' ' -f2`; \
+	m4 -P -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_syscmd(grep -v ^# $< | markdown /dev/stdin)' $(POST) > /tmp/temp
+	m4 -P -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
-%.html: %.org $(FOOTER) $(HEADER)
-	emacs -l org-xelatex.el --batch --eval '(progn (find-file "$<") (beginning-of-buffer)(insert-file "$(abspath $(HEADER))") (shell-command-on-region (point-max) (point-max) "[ $@ != index.html ] && sed -e \"s!<<<1>>>!$@!\" -e \"s!<<<2>>>!http://maskray.tk/$@!\" $(abspath $(FOOTER))" (buffer-name) t) (org-export-as-html 3) )'
+%.html:: %.org $(DEFAULT) $(POST)
+	emacs --batch --eval '(progn (find-file "$<") (org-export-as-html 3) )'
+	sed -n '/<body>/,/<\/body>/p' $@ | tail -n +3 | sed '$$d' | sed '$$d' > /tmp/temp
+	TAGS=`grep '#+TAGS:' $< | cut -d' ' -f2- | tr ' ' ,`; \
+	TITLE=`grep '#+TITLE:' $< | cut -d' ' -f2`; \
+	m4 -P -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_undivert(/tmp/temp)' $(POST) > /tmp/temp2
+	m4 -P -D_CONTENT='m4_undivert(/tmp/temp2)' $(DEFAULT) > $@
 
 upload:
-	rsync -a --exclude auto * maskray@maskray.tk:/var/www/maskray/
+	rsync -a --delete --exclude auto * maskray@maskray.tk:/var/www/maskray/
+
+clean:
+	find 20?? \( -name '*~' -o -name '*#' \) -exec rm {} \;
+
+distclean: clean
+	$(RM) index.html
+	find 20?? -name '*.html' -exec rm {} \;
 
 inotify:
 	inotifywait -e modify -m -r . --format %w 2>&- | xargs -I % sh -c "touch \`dirname %\`" >&- 2>&- &
