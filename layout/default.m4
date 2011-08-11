@@ -43,12 +43,7 @@
               <div class="widget">
                 <h2>Links</h2>
                 <ul>
-                  <li><a href="http://hsyyf.me/">月下叹逍遥</a></li>
-                  <li><a href="http://tusooa.tk/">tusooa</a></li>
-                  <li><a href="http://iperl.co.cc/">darkraven</a></li>
-		  <li><a href="http://cfy.machinelife.org/">cfy</a></li>
-		  <li><a href="http://machinelife.org/">Kandu</a></li>
-                  <li><a href="http://forum.ubuntu.org.cn/">笨兔论坛</a></li>
+		  m4_include(`layout/links.m4')
                 </ul>
               </div>
                 </li>

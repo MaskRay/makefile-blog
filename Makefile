@@ -5,6 +5,7 @@ TAG_POSTS := layout/tag_posts.m4
 DEFAULT := layout/default.m4
 POST := layout/post.m4
 TAGS := layout/tags.m4
+LINKS := layout/links.m4
 
 SRCS = $(wildcard $(foreach s,org mdown,$1/$2/*/*.$s))
 HTML = $(addsuffix .html,$(basename $1))
@@ -24,7 +25,7 @@ all: index.html $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
 
 $(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
 
-$(DEFAULT): $(TAGS)
+$(DEFAULT): $(TAGS) $(LINKS)
 	touch $@
 
 tags/all.m4: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))

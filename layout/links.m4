@@ -1,0 +1,6 @@
+m4_define(`_LI', `<li><a href="$1" target="_blank">$2</a></li>')
+_LI(`http://tusooa.tk', `tusooa')
+_LI(`http://cfy.machinelife.org', `cfy')
+_LI(`http://machinelife.org', `Kandu')
+_LI(`http://blog.roraven.co.cc/', `DarkRaven')
+_LI(`http://hsyyf.me/', `月下叹逍遥')
