@@ -65,40 +65,16 @@
             </div>
 
             <div id='other'>
-              <div class="span-24 last">
-                _CONTENT()
-              </div>
-              <div id="disqus_thread"></div>
-              <script type="text/javascript">
-                /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
-              var disqus_shortname = 'tusooaTk'; // required: replace example with your forum shortname
-
-              // The following are highly recommended additional parameters. Remove the slashes in front to use.
-              // var disqus_identifier = 'unique_dynamic_id_1234';
-              // var disqus_url = 'http://example.com/permalink-to-page.html';
-
-              /* * * DON'T EDIT BELOW THIS LINE * * */
-              (function() {
-               var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-               dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
-               (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-               })();
-             </script>
-             <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-             <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+               _CONTENT()
            </div>
          </div> <!--#innerPage-->
       </div> <!--#containBg-->
     </div> <!--#contain-->
     <div id="footer">
-      <div class="span-24 last">
-        <div class="span-12">
           <h2>Network</h2>
           <p>
             <a href="http://twitter.com/Mask_Ray/">My Twitter</a><br />
           </p>
-        </div>
-      </div>
     </div>
     <!--google analytics-->
     <script type="text/javascript">
@@ -127,7 +103,7 @@
 		query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
 	}
 	}
-	document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/maskraysblog/get_num_replies.js' + query + '"></' + 'script>');
+	document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tusooatk/get_num_replies.js' + query + '"></' + 'script>');
 })();
 //]]>
     </script>

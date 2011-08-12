@@ -73,7 +73,7 @@ ul.posts {
 /*****************************************************************************/
 
 .site {
-  font-size: 110%;
+  font-size: 200%;
   text-align: justify;
   min-width: 40em;
   max-width: 60em;
@@ -147,9 +147,11 @@ text-shadow: 4px 4px 4px #aaa;
   /* standard */
 
   #post pre {
-    border: 1px solid #ddd;
+/*    border: 1px solid #ddd;
     background-color: #eef;
-    padding: 0 .4em;
+    padding: 0 .4em;*/
+      background:url(black.gif);
+      border-radius:4;
   }
 
   #post ul,
@@ -158,10 +160,12 @@ text-shadow: 4px 4px 4px #aaa;
   }
 
   #post code {
-    border: 1px solid #ddd;
-    background-color: #eef;
-    font-size: 95%;
-    padding: 0 .2em;
+/*    border: 1px solid #ddd;*/
+    /*background-color: #eef;
+    font-size: 95%;*/
+/*    padding: 0 .2em;*/
+      font-family: Monaco, DejaVu Sans YuanTi Mono, DejaVu Sans Mono, monospace;
+      
   }
 
     #post pre code {
@@ -231,3 +235,4 @@ body
 {
     color:#333;
 }
+.span-24 {width:950px;margin-right:0;}

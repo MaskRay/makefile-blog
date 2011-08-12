@@ -2,13 +2,17 @@ m4_include(`m4/foreach.m4')
 m4_changecom()
 <div id="post">
     <h2>_TITLE()</h2>
+    <div id="postInfo">
+      发表于<a href="/">_DATE()</a>
+      <br />
+      Tags:&nbsp;
+      m4_define(`_LI', `<a href="/tags/$1.html">$1</a>&nbsp;')
+      foreach(`x', `_LI(x)', _TAGS())
+      <br />
+      <a href="#disqus_thread">How many comments?</a>
+    </div>
     _POST()
 </div>
-<br />
-<p>
-m4_define(`_LI', `<a href="/tags/$1.html">$1</a>&nbsp;')
-foreach(`x', `_LI(x)', _TAGS())
-</p>
 <br />
 <!--
 <div id="disqus_thread"></div>

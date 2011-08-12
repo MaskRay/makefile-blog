@@ -12,7 +12,7 @@ HTML = $(addsuffix .html,$(basename $1))
 HTMLS = $(call HTML,$(call SRCS,$1,$2))
 
 define create-titles
-$1/titles-$2: $1/$2 $(DEFAULT) $(POST)
+$1/titles-$2: $1/$2
 	$(MAKE) $$(foreach h,$$(call HTMLS,$1,$2),$$h)
 	{ $$(foreach i,$$(call SRCS,$1,$2),$(ECHO) -ne '/$$(call HTML,$$i) ';$(ECHO) -ne `grep -F '#+TITLE:' $$i | cut -d' ' -f2-;grep -F '#+TAGS:' $$i | cut -d' ' -f2-`;$(ECHO);) } | \
 	sort -r  > $$@
@@ -21,7 +21,7 @@ endef
 .SUFFIXES:
 .PHONY: all upload inotify
 
-all: index.html $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
+all: index.html
 
 $(foreach mm,$(MONTHS),$(eval $(call create-titles,$(subst /,,$(dir $(mm))),$(notdir $(mm)))))
 
@@ -43,10 +43,11 @@ tags/all.m4: $(foreach mm,$(MONTHS),$(subst /,/titles-,$(mm)))
 	for f in `$(ECHO) $^ | xargs -n 1 | sort -r`; do \
 		awk '{print "LI("$$1","$$2")"}' $$f; \
 	done > $@
+	$(MAKE) tags/*.html
 
 tags/%.html: tags/%.m4 $(DEFAULT) $(TAG_POSTS)
 	m4 -P -D_TAG=$* -D_POSTS='m4_include($<)' $(TAG_POSTS) > /tmp/temp
-	m4 -P -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
+	m4 -P -D_TITLE=MaskRay -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
 index.html: | tags/all.html
 	ln -sf tags/all.html $@
@@ -54,8 +55,8 @@ index.html: | tags/all.html
 %.html:: %.mdown $(DEFAULT) $(POST)
 	TAGS=`grep '#+TAGS:' $< | cut -d' ' -f2- | tr ' ' ,`; \
 	TITLE=`grep '#+TITLE:' $< | cut -d' ' -f2`; \
-	m4 -P -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_syscmd(grep -v ^# $< | markdown /dev/stdin)' $(POST) > /tmp/temp
-	m4 -P -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
+	m4 -P -D_DATE=`echo $@ | awk '{print substr($$0,1,10)}'`  -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_syscmd(grep -v ^# $< | markdown /dev/stdin)' $(POST) > /tmp/temp
+	m4 -P -D_TITLE="$$TITLE" -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
 %.html:: %.org $(DEFAULT) $(POST)
 	emacs --batch --eval '(progn (find-file "$<") (org-export-as-html 3) )'
@@ -63,7 +64,7 @@ index.html: | tags/all.html
 	TAGS=`grep '#+TAGS:' $< | cut -d' ' -f2- | tr ' ' ,`; \
 	TITLE=`grep '#+TITLE:' $< | cut -d' ' -f2`; \
 	m4 -P -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_undivert(/tmp/temp)' $(POST) > /tmp/temp2
-	m4 -P -D_CONTENT='m4_undivert(/tmp/temp2)' $(DEFAULT) > $@
+	m4 -P -D_TITLE="$$TITLE" -D_CONTENT='m4_undivert(/tmp/temp2)' $(DEFAULT) > $@
 
 upload:
 	rsync -a --delete --exclude auto * maskray@maskray.tk:/var/www/maskray/
