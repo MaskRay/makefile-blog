@@ -1,16 +1,20 @@
+m4_divert(1)
+m4_include(`layout/alltags.m4')
+m4_divert(0)
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>_TITLE()</title>
     <meta name="author" content="MaskRay" />
+    <meta name="keywords" content="_TAGS(), MaskRay" />
     
     <!-- openid -->
     <link rel="openid.server" href="https://login.launchpad.net/+openid" />
-    <link rel="openid.delegate" href="https://login.launchpad.net/+id/63hThQp" />
+    <link rel="openid.delegate" href="https://login.launchpad.net/+id/7NbsseQ" />
     <link rel="openid2.provider" href="https://login.launchpad.net/+openid" />
-    <link rel="openid2.local_id" href="https://login.launchpad.net/+id/63hThQp" />
-    <meta http-equiv="X-XRDS-Location" content="https://login.launchpad.net/+id/63hThQp/+xrds" />
+    <link rel="openid2.local_id" href="https://login.launchpad.net/+id/7NbsseQ" />
+    <meta http-equiv="X-XRDS-Location" content="https://login.launchpad.net/+id/7NbsseQ/+xrds" />
     <!--google font api-->
     <link href='http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz:regular,bold' rel='stylesheet' type='text/css' />
 
@@ -50,7 +54,7 @@
                 <li class="widget">
               <div class="widget">
                   <h2>Tags</h2>
-                  m4_include(`layout/tags.m4')
+                  m4_undivert(1)
               </div>
                 </li>
                 <li class="widget">
@@ -103,7 +107,7 @@
 		query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
 	}
 	}
-	document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tusooatk/get_num_replies.js' + query + '"></' + 'script>');
+	document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/maskraysblog/get_num_replies.js' + query + '"></' + 'script>');
 })();
 //]]>
     </script>

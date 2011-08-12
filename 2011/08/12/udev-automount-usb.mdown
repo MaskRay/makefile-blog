@@ -1,0 +1,19 @@
+#TITLE: 用udev自动挂载usb设备
+#TAGS: udev usb
+
+前几天看了 `udev` 的介绍，今天正好 `#ubuntu-cn@freenode` 里有人问，就把这个老大难问题解决掉了。
+
+代码如下：
+
+    KERNEL!="sd[b-z]?", GOTO="automount_exit"
+    ACTION=="add", SUBSYSTEM=="block", RUN+="/bin/mkdir /media/%E{ID_FS_LABEL}-%E{ID_FS_UUID}", RUN+="/bin/mount -o uid=1000,user,codepage=936,utf8 $root/%k /media/%E{ID_FS_LABEL}-%E{ID_FS_UUID}"
+    ACTION=="remove", SUBSYSTEM=="block", RUN+="/bin/umount /media/%E{ID_FS_LABEL}-%E{ID_FS_UUID}", RUN+="/bin/rmdir /media/%E{ID_FS_LABEL}-%E{ID_FS_UUID}"
+    LABEL="automount_exit"
+
+保存为 `/etc/udev/rules.d/` 下的某个文件。
+    
+第一行用 `glob` 跳过名称非 `sd[b-z]?` 字样的。
+
+`%E{ID_FS_LABEL}` 是卷标，`%E{ID_FS_UUID}` 是 `UUID`，第二行就是检测 `add` 事件，先根据卷标和 `UUID` 在 `/media/` 下创建一个目录然后挂载。
+
+第三行是相应的卸载命令。

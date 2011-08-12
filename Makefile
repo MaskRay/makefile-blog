@@ -5,7 +5,7 @@ MONTHS := $(wildcard 20??/[0-9][0-9])
 TAG_POSTS := layout/tag_posts.m4
 DEFAULT := layout/default.m4
 POST := layout/post.m4
-TAGS := layout/tags.m4
+TAGS := layout/alltags.m4
 LINKS := layout/links.m4
 
 SRCS = $(wildcard $(foreach s,org mdown,$1/*/*.$s))
@@ -20,6 +20,7 @@ $1/titles-$2: $1/$2 $(DEFAULT) $(POST)
 endef
 
 .SUFFIXES:
+.PRECIOUS: %.phtml
 .PHONY: all upload inotify
 
 all: index.html $(call HTML,$(wildcard tags/*.m4)) $(foreach m,$(MONTHS),$(call HTMLS,$m))
@@ -29,7 +30,7 @@ index.html: | tags/all.html
 
 tags/%.html: tags/%.m4 $(DEFAULT) $(TAG_POSTS)
 	m4 -P -D_TAG=$* -D_POSTS='m4_include($<)' $(TAG_POSTS) > /tmp/temp
-	m4 -P -D_TITLE=MaskRay -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
+	m4 -P -D_TAGS=$* -D_TITLE=MaskRay -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
 tags/%.m4: tags/all.m4
 	sort -r $@ > /tmp/temp && mv /tmp/temp $@
@@ -39,22 +40,20 @@ tags/all.m4: $(foreach m,$(MONTHS),$(call SRCS,$m))
 	for f in $^; do awk "/^#.?TITLE:/{title=\$$2} /^#.?TAGS:/{tag[1]=\"all\";for(i=2;i<=NF;i++)tag[i]=\$$i} END{for(i in tag){print \"LI(/$${f/%.*/.html},\"title\")\" >> \"tags/\"tag[i]\".m4\"}}" $$f; done
 	[ -f "$@" ] && sort -r $@ > /tmp/temp && mv /tmp/temp $@
 
-%.html:: %.mdown $(DEFAULT) $(POST)
-	TAGS=`grep '#+TAGS:' $< | cut -d' ' -f2- | tr ' ' ,`; \
-	TITLE=`grep '#+TITLE:' $< | cut -d' ' -f2`; \
-	$$f=$@; \
-	m4 -P -D_DATE=$${f:0:10} -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_syscmd(grep -v ^# $< | markdown /dev/stdin)' $(POST) > /tmp/temp; \
-	m4 -P -D_TITLE="$$TITLE" -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
+%.phtml:: %.mdown
+	grep -v '^#' $< | markdown /dev/stdin > $@
 
-%.html:: %.org $(DEFAULT) $(POST)
+%.phtml:: %.org
 	emacs --batch --eval '(progn (find-file "$<") (org-export-as-html 3) )'
 	sed -n '/<body>/,/<\/body>/p' $@ | tail -n +5 | sed '$$d' | sed '$$d' > /tmp/temp
 	mv /tmp/temp $@
-	TAGS=`grep '#+TAGS:' $< | cut -d' ' -f2- | tr ' ' ,`; \
-	TITLE=`grep '#+TITLE:' $< | cut -d' ' -f2`; \
-	$$f=$@; \
-	m4 -P -D_DATE=$${f:0:10} -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_undivert($@)' $(POST) > /tmp/temp; \
-	m4 -P -D_TITLE="$$TITLE" -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
+
+%.html: %.phtml $(DEFAULT) $(POST)
+	f=$<; \
+	TAGS=`grep '^#.\?TAGS:' $${f/%.phtml/.*} | cut -d' ' -f2- | tr ' ' ,`; \
+	TITLE=`grep '^#.\?TITLE:' $${f/%.phtml/.*} | cut -d' ' -f2`; \
+	m4 -P -D_DATE=$${f:0:10} -D_TAGS="$$TAGS" -D_TITLE="$$TITLE" -D_POST='m4_undivert($<)' $(POST) > /tmp/temp; \
+	m4 -P -D_TAGS="$$TITLE, $$TAGS" -D_TITLE="$$TITLE" -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
 $(DEFAULT): $(TAGS) $(LINKS)
 	touch $@
