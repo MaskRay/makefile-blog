@@ -44,9 +44,8 @@ tags/all.m4: $(foreach m,$(MONTHS),$(call SRCS,$m))
 	grep -v '^#' $< | markdown /dev/stdin > $@
 
 %.phtml:: %.org
-	emacs --batch --eval '(progn (find-file "$<") (org-export-as-html 3) )'
-	sed -n '/<body>/,/<\/body>/p' $@ | tail -n +5 | sed '$$d' | sed '$$d' > /tmp/temp
-	mv /tmp/temp $@
+	emacs --batch --eval '(progn (find-file "$<") (org-export-as-html 3 nil nil nil t) )'
+	tail -n +3 $(@:.phtml=.html) > $@
 
 %.html: %.phtml $(DEFAULT) $(POST)
 	f=$<; \
