@@ -1,0 +1,90 @@
+#TITLE: 网络学堂feeds2mail
+#TAGS: ruby
+
+用网页来看网络学堂的公告很费时间，就打算像 `rss2email` 那样，把消息制作成邮件。
+用 `Ruby` 的 `mechanize` 来和网站交互，读取“课程公告”和“课程文件”中的消息，
+把链接 `sha1` 后判断是否生成过提示邮件，没有则跟踪链接，用 `w3m` 输出成纯文本，
+生成的邮件用 `sendmail` 投递。
+
+    #!/usr/bin/ruby
+    require 'base64'
+    require 'date'
+    require 'digest/sha1'
+    require 'etc'
+    require 'mechanize'
+    require 'set'
+
+    agent = Mechanize.new
+    agent.max_history = 1
+
+    conf_dir = File.expand_path('~/.net_lesson')
+    unless File.directory?(conf_dir) && File.file?(File.join(conf_dir, 'passwd'))
+      STDERR.puts 'echo [userid] [passwd] > ~/.net_lesson/passwd'
+      exit 1
+    end
+    userid, passwd = File.open(File.join(conf_dir, 'passwd'), 'r') {|f| f.gets.split }
+    feeds = Set.new
+    File.open(File.join(conf_dir, 'feeds.dat'), 'r:binary') do |f|
+      begin
+        while (h = f.read 20)
+          feeds.add h
+        end
+      rescue EOFError
+      end
+    end
+    new_feeds = []
+    puts "loaded #{feeds.size} feeds" unless feeds.empty?
+
+    page = agent.get('http://learn.tsinghua.edu.cn/')
+    form = page.form('form1')
+    form.field_with(:name => 'userid').value = userid
+    form.field_with(:name => 'userpass').value = passwd
+    agent.submit(form)
+    puts 'login'
+
+    page = agent.get('http://learn.tsinghua.edu.cn/MultiLanguage/lesson/student/MyCourse.jsp?language=cn')
+    page.links_with(:href => /course_locate.jsp/).each do |lesson|
+      lesson_name = lesson.text.gsub(/\s/, '').sub(/\(.*/, '')
+      page = lesson.click
+      puts "checking #{lesson_name}"
+      ['getnoteid_student.jsp', 'download.jsp'].collect do |uri|
+        download = uri == 'download.jsp'
+        page2 = page.link_with(:href => /#{uri}/).click
+        page2.links_with(:href => /note_reply|filePath/).each do |note|
+          h = Digest::SHA1.digest note.href
+          next if feeds.member? h
+          puts "  found #{note.text.strip}"
+          author = (download ? 'file ' : '') + note.node.xpath("../following-sibling::td")[-2].text
+          IO.popen(['/usr/sbin/sendmail', Etc.getlogin], 'w') do |f|
+            bar = download ? "[#{lesson_name}]" : "*#{lesson_name}*"
+            time = Date.parse(note.node.xpath("../following-sibling::td")[-1].text).strftime '%a, %d %b %Y 00:00:00 +0800'
+            f.puts(<<EOF)
+    From: #{author} <#{Etc.getlogin}>
+    Subject: =?utf-8?B?#{Base64.strict_encode64("#{bar} #{note.text.strip}")}?=
+    Date: #{time}
+    User-Agent: net_lesson
+    Content-Type: text/plain; charset="utf-8"
+    Content-Transfer-Encoding: binary
+
+    EOF
+            if download
+              f.puts note.text
+            else
+              IO.popen(['w3m', '-dump', '-T', 'text/html'], 'r+') do |p|
+                p.puts(note.click.body)
+                p.close_write
+                f.puts p.read
+              end
+            end
+
+            f.puts "\nURI: #{page2.uri.merge URI.escape(note.href, /[\u4E00-\u9FFF]/)}"
+          end
+          new_feeds << h
+        end
+      end
+    end
+
+    unless new_feeds.empty?
+      puts "appending to feeds.dat"
+      File.open(File.join(conf_dir, 'feeds.dat'), 'a:binary') {|f| new_feeds.each {|a| f.write(a) } }
+    end

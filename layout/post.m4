@@ -23,13 +23,13 @@ m4_changecom()
     var disqus_developer = location.host.match(/\.dev$|^localhost/) ? 1 : 0;
 //]]>
 </script>
-<script src="http://disqus.com/forums/tusooa/embed.js" type="text/javascript"></script>
-<noscript><a href="http://tusooa.disqus.com/?url=ref">View the discussion thread.</a></noscript>
+<script src="http://disqus.com/forums/maskraysblog/embed.js" type="text/javascript"></script>
+<noscript><a href="http://maskraysblog.disqus.com/?url=ref">View the discussion thread.</a></noscript>
 -->
 <div id="disqus_thread"></div>
 <script type="text/javascript">
     /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
-    var disqus_shortname = 'tusooaTk'; // required: replace example with your forum shortname
+    var disqus_shortname = 'maskraysblog'; // required: replace example with your forum shortname
 
     // The following are highly recommended additional parameters. Remove the slashes in front to use.
     // var disqus_identifier = 'unique_dynamic_id_1234';

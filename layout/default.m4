@@ -19,8 +19,8 @@ m4_divert(0)
     <link href='http://fonts.googleapis.com/css?family=Yanone+Kaffeesatz:regular,bold' rel='stylesheet' type='text/css' />
 
     <!--blue print CSS-->
-    <link rel="stylesheet" href="/css/blueprint/screen.css" type="text/css" media="screen, projection" />
-    <link rel="stylesheet" href="/css/blueprint/print.css" type="text/css" media="print" />
+    <!-- <link rel="stylesheet" href="/css/blueprint/screen.css" type="text/css" media="screen, projection" />
+    <link rel="stylesheet" href="/css/blueprint/print.css" type="text/css" media="print" /> -->
 
     <!-- syntax highlighting CSS -->
     <link rel="stylesheet" href="/css/syntax.css" type="text/css" />

