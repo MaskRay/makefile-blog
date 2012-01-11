@@ -1,0 +1,5 @@
+#TITLE: Tiling window manager的应用与设计
+#TAGS: desktop
+
+小论文，关于平铺式窗口管理器的。希望大家多提点意见～
+[下载地址](tiling-window-manager-application-and-design.pdf.xz)

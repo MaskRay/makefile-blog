@@ -44,12 +44,16 @@
         #-}
 
     import Control.Monad
+    import Codec.Binary.UTF8.String (encodeString)
     import Data.List
     import qualified Data.Map as M
     import Data.Maybe (isNothing, isJust, catMaybes, fromMaybe)
     import Data.Monoid
     import System.Exit
     import System.IO
+    import System.Process
+    import System.Posix.Process (executeFile)
+    import System.Posix.Types (ProcessID)
     import Text.Regex
 
     import XMonad
@@ -77,9 +81,9 @@
     import XMonad.Actions.FloatKeys
     import XMonad.Actions.FloatSnap
     import XMonad.Actions.GridSelect
+    import XMonad.Actions.Navigation2D
     import XMonad.Actions.Search
     import XMonad.Actions.Submap
-    import XMonad.Actions.UpdatePointer
     import XMonad.Actions.SpawnOn
     import XMonad.Actions.TopicSpace
     import XMonad.Actions.WindowBringer
@@ -89,7 +93,6 @@
 
     import XMonad.Hooks.DynamicLog
     import XMonad.Hooks.EwmhDesktops
-    import XMonad.Hooks.FadeInactive
     import XMonad.Hooks.ManageDocks
     import XMonad.Hooks.ManageHelpers
     import XMonad.Hooks.Place
@@ -125,6 +128,14 @@
     instance Transformer TABBED Window where
          transform _ x k = k (named "TABBED" (tabbedAlways shrinkText myTabTheme)) (const x)
 
+    {-
+     - Navigation2D
+     -}
+
+    myNavigation2DConfig = defaultNavigation2DConfig { layoutNavigation   = [("Full", centerNavigation)]
+                                                     , unmappedWindowRect = [("Full", singleWindowRect)]
+                                                     }
+
     myLayout = avoidStruts $
         configurableNavigation (navigateColor "#00aa00") $
         mkToggle1 TABBED $
@@ -138,23 +149,23 @@
         Full ||| mosaic 1.5 [7,5,2] ||| autoMaster 1 (1/20) (Mag.magnifier Grid)
 
     myManageHook = composeAll $
-        [ className =? c --> doShift "web" | c <- ["Firefox"]] ++
-        [ className =? c --> doShift "code" | c <- ["Gvim"]] ++
-        [ className =? c --> doShift "doc" | c <- ["Evince"]] ++
-        [ className =? c --> doShift "net" | c <- ["Wpa_gui"]] ++
-        [ className =? c --> doShift "dict" | c <- ["Goldendict", "Stardict"]] ++
-        [ className =? c --> doShift "office" | c <- ["libreoffice-writer"]] ++
+        [ className =? c --> doShift "web" | c <- ["Firefox"] ] ++
+        [ className =? c --> doShift "code" | c <- ["Gvim"] ] ++
+        [ className =? c --> doShift "doc" | c <- ["Evince"] ] ++
+        [ className =? c --> doShift "net" | c <- ["Wpa_gui"] ] ++
+        [ className =? c --> doShift "dict" | c <- ["Goldendict", "Stardict"] ] ++
+        [ className =? c --> doShift "media" | c <- ["feh", "Display"] ] ++
+        [ className =? c --> doShift "emacs" | c <- ["Emacs"] ] ++
+        [ fmap (isPrefixOf "libreoffice" <||> isPrefixOf "LibreOffice") className --> doShift "office" ] ++
         [ myFloats --> doCenterFloat ] ++
-        [ manageDocks , namedScratchpadManageHook scratchpads] ++
-        [ className =? c --> ask >>= \w -> liftX (hide w) >> idHook | c <- ["XClipboard"]]
+        [ manageDocks , namedScratchpadManageHook scratchpads ] ++
+        [ className =? c --> ask >>= \w -> liftX (hide w) >> idHook | c <- ["XClipboard"] ]
       where
         myFloats = foldr1 (<||>)
             [ className =? "Firefox" <&&> fmap (/="Navigator") appName
             , className =? "Nautilus" <&&> fmap (not . isSuffixOf " - File Browser") title
             , flip fmap className $ flip elem
-                [ "feh"
-                , "Display"
-                , "XClock"
+                [ "XClock"
                 , "Xmessage"
                 , "Floating"
                 ]
@@ -196,20 +207,20 @@
         [ ("M-" ++ m ++ [k], f i)
             | (i, k) <- zip myTopicNames "1234567890-="
             , (f, m) <- [ (switchTopic myTopicConfig, "")
-                        , (windows . W.shift, "S-")
+                        , (windows . liftM2 (.) W.view W.shift, "S-")
                         ]
         ]
         ++
         [ ("C-; " ++ m ++ [k], f i)
             | (i, k) <- zip myTopicNames "asdfghjkl;'\""
             , (f, m) <- [ (switchTopic myTopicConfig, "")
-                        , (windows . W.shift, "S-")
+                        , (windows . liftM2 (.) W.view W.shift, "S-")
                         ]
         ]
         ++
         [("M-" ++ m ++ k, screenWorkspace sc >>= flip whenJust (windows . f))
             | (k, sc) <- zip ["w", "e", "r"] [0..]
-            , (f, m) <- [(W.view, ""), (W.shift, "S-")]
+            , (f, m) <- [(W.view, ""), (liftM2 (.) W.view W.shift, "S-")]
         ]
         ++
         [ ("M-S-q", io exitFailure)
@@ -217,19 +228,24 @@
         , ("M-q", spawn "ghc -e ':m +XMonad Control.Monad System.Exit' -e 'flip unless exitFailure =<< recompile False' && xmonad --restart")
 
         , ("<Print>", spawn "import /tmp/screen.jpg")
-        , ("C-<Print>", spawn "import -window root /screen.jpg")
+        , ("C-<Print>", spawn "import -window root /tmp/screen.jpg")
         , ("M-s", spawnSelected defaultGSConfig ["xterm", "firefox-bin", "emacs --daemon", "desmume", "VisualBoyAdvance "])
         , ("M-S-i", spawn "xcalib -i -a")
         , ("M-S-l", spawn "xscreensaver-command -lock")
         , ("M-S-k", spawn "xkill")
         , ("<XF86AudioRaiseVolume>", spawn "amixer set Master 5%+")
         , ("<XF86AudioLowerVolume>", spawn "amixer set Master 5%-")
+        , ("<XF86AudioNext>", spawn "mpc seek +10")
+        , ("<XF86AudioPrev>", spawn "mpc seek -10")
         , ("<XF86AudioMute>", spawn "amixer set Master mute")
+        , ("<XF86AudioPlay>", spawn "mpc toggle")
+        , ("<XF86Eject>", spawn "eject")
         , ("M-S-a", sendMessage Taller)
         , ("M-S-z", sendMessage Wider)
-        , ("M-k", placeFocused $ withGaps (22, 0, 0, 0) $ smart (0.5,0.5))
+        , ("M-f", placeFocused $ withGaps (22, 0, 0, 0) $ smart (0.5,0.5))
 
         -- window management
+        , ("M-n", doTo Next EmptyWS getSortByIndex (windows . liftM2 (.) W.view W.shift))
         , ("M-<Space>", sendMessage NextLayout)
         , ("M-i", sendMessage Shrink)
         , ("M-o", sendMessage Expand)
@@ -239,10 +255,11 @@
         , ("M-b", sendMessage ToggleStruts)
         , ("M-d", bringMenu)
         , ("M-y", focusUrgent)
-        , ("M-<L>", withFocused (keysMoveWindow (-30,0))) -- move float left
-        , ("M-<R>", withFocused (keysMoveWindow (30,0))) -- move float right
-        , ("M-<U>", withFocused (keysMoveWindow (0,-30))) -- move float up
-        , ("M-<D>", withFocused (keysMoveWindow (0,30))) -- move float down
+        , ("M-;", switchLayer)
+        , ("M-h", windowGo L True)
+        , ("M-j", windowGo D True)
+        , ("M-k", windowGo U True)
+        , ("M-l", windowGo R True)
         , ("M-S-<L>", withFocused (keysResizeWindow (-30,0) (0,0))) --shrink float at right
         , ("M-S-<R>", withFocused (keysResizeWindow (30,0) (0,0))) --expand float at right
         , ("M-S-<D>", withFocused (keysResizeWindow (0,30) (0,0))) --expand float at bottom
@@ -251,23 +268,23 @@
         , ("M-C-<R>", withFocused (keysResizeWindow (-30,0) (1,0))) --shrink float at left
         , ("M-C-<U>", withFocused (keysResizeWindow (0,30) (0,1))) --expand float at top
         , ("M-C-<D>", withFocused (keysResizeWindow (0,-30) (0,1))) --shrink float at top
+        , ("M-<L>", withFocused (keysMoveWindow (-30,0)))
+        , ("M-<R>", withFocused (keysMoveWindow (30,0)))
+        , ("M-<U>", withFocused (keysMoveWindow (0,-30)))
+        , ("M-<D>", withFocused (keysMoveWindow (0,30)))
         , ("C-; <L>", withFocused $ snapMove L Nothing)
         , ("C-; <R>", withFocused $ snapMove R Nothing)
         , ("C-; <U>", withFocused $ snapMove U Nothing)
         , ("C-; <D>", withFocused $ snapMove D Nothing)
 
-        -- workspace management
-        , ("C-; ;", toggleWS)
-
         -- dynamic workspace
-        , ("M-n", addWorkspacePrompt myXPConfig)
+        , ("M-C-n", addWorkspacePrompt myXPConfig)
         , ("M-C-r", removeWorkspace)
         , ("M-C-S-r", killAll >> removeWorkspace)
 
         -- preferred cui programs
         , ("C-; C-;", pasteChar controlMask ';')
         , ("C-' C-'", pasteChar controlMask '\'')
-        , ("C-' s", namedScratchpadAction scratchpads "screen")
         , ("C-' g", namedScratchpadAction scratchpads "ghci")
         , ("C-' h", namedScratchpadAction scratchpads "htop")
         , ("C-' m", namedScratchpadAction scratchpads "getmail")
@@ -285,7 +302,6 @@
         -- prompts
         , ("M-'", workspacePrompt myXPConfig (switchTopic myTopicConfig) )
         , ("M-p c", prompt ("xterm -e") myXPConfig)
-        , ("M-p m", manPrompt myXPConfig)
         , ("M-p d", changeDir myXPConfig)
         , ("M-p p", runOrRaisePrompt myXPConfig)
         , ("M-p e", AL.launchApp myXPConfig "evince")
@@ -296,16 +312,15 @@
         ]
 
     scratchpads =
-      [ NS "screen" "xterm -T screen -e 'screen -d -R'" (title =? "screen") mySPFloat
-      , NS "ghci" "xterm -T ghci -e ghci" (title =? "ghci") mySPFloat
+      [ NS "ghci" "xterm -T ghci -e ghci" (title =? "ghci") mySPFloat
       , NS "htop" "xterm -T htop -e htop" (title =? "htop") mySPFloat
       , NS "getmail" "xterm -T getmail -e 'getmail -r rc0 -r rc1'" (title =? "getmail") doTopRightFloat
       , NS "r2e" "xterm -T r2e -e 'r2e run'" (title =? "r2e") doBottomRightFloat
       , NS "alsamixer" "xterm -T alsamixer -e alsamixer" (title =? "alsamixer") doLeftFloat
-      , NS "eix-sync" "xterm -T eix-sync -e 'sudo eix-sync'" (title =? "eix-sync") doTopFloat
+      , NS "eix-sync" "xterm -T eix-sync -e 'screen -m sh -c \"sudo eix-sync; read\"'" (title =? "eix-sync") doTopFloat
       ]
       where
-        mySPFloat = customFloating $ W.RationalRect (1/5) (1/5) (3/5) (3/5)
+        mySPFloat = customFloating $ W.RationalRect (1/6) (1/6) (4/6) (4/6)
         doTopFloat = customFloating $ W.RationalRect (1/3) 0 (1/3) (1/3)
         doTopLeftFloat = customFloating $ W.RationalRect 0 0 (1/3) (1/3)
         doTopRightFloat = customFloating $ W.RationalRect (2/3) 0 (1/3) (1/3)
@@ -313,7 +328,7 @@
         doBottomRightFloat = customFloating $ W.RationalRect (2/3) (2/3) (1/3) (1/3)
         doLeftFloat = customFloating $ W.RationalRect 0 0 (1/3) 1
 
-    myConfig xmobar = ewmh $ withUrgencyHook NoUrgencyHook $ defaultConfig
+    myConfig xmobar = ewmh $ withNavigation2DConfig myNavigation2DConfig $ withUrgencyHook NoUrgencyHook $ defaultConfig
         { terminal           = "xterm"
         , focusFollowsMouse  = False
         , borderWidth        = 1
@@ -325,7 +340,7 @@
         , layoutHook         = myLayout
         , manageHook         = myManageHook
         , handleEventHook    = mempty
-        , logHook            = myDynamicLog xmobar <+> fadeInactiveLogHook 0.4 <+> updatePointer (Relative 0.5 0.5)
+        , logHook            = myDynamicLog xmobar
         , startupHook        = checkKeymap (myConfig xmobar) myKeys >> spawn "~/bin/start-tiling"
     } `additionalKeysP` myKeys
 
@@ -341,9 +356,15 @@
         , historyFilter     = deleteConsecutive
         }
 
+    -- | Like 'spawn', but uses bash and returns the 'ProcessID' of the launched application
+    spawnBash :: MonadIO m => String -> m ProcessID
+    spawnBash x = xfork $ executeFile "/bin/bash" False ["-c", encodeString x] Nothing
+
     main = do
         checkTopicConfig myTopicNames myTopicConfig
-        dzen <- spawnPipe "dzen2 -h 22 -ta right -fg '#a8a3f7' -fn 'WenQuanYi Micro Hei-14'"
+        dzen <- spawnPipe "killall dzen2; dzen2 -x 500 -h 22 -ta right -fg '#a8a3f7' -fn 'WenQuanYi Micro Hei-14'"
+        -- remind <http://www.roaringpenguin.com/products/remind>
+        dzenRem <- spawnBash "rem | tail -n +3 | grep . | { read a; while read t; do b[${#b[@]}]=$t; echo $t; done; { echo $a; for a in \"${b[@]}\"; do echo $a; done; } | dzen2 -p -x 100 -w 400 -h 22 -ta l -fg '#a8a3f7' -fn 'WenQuanYi Micro Hei-14' -l ${#b[@]}; }"
         spawn "killall trayer; trayer --align left --edge top --expand false --width 100 --transparent true --tint 0x000000 --widthtype pixel --SetPartialStrut true --SetDockType true --height 22"
         xmonad $ myConfig dzen
 
@@ -398,12 +419,13 @@
     myTopics =
         [ TI "web" "" (spawn "firefox") "firefox.xpm"
         , TI "code" "" (spawn "gvim") "gvim.xpm"
-        , TI "mail" "" (spawn "xterm -T mutt -e mutt") "thunderbird.xpm"
+        , TI "term" "" (spawn "xterm -T screen -e 'screen -d -R'") "xterm.xpm"
         , TI "doc" "Documents/" (spawn "evince") "evince.xpm"
-        , TI "net" "" (spawn "wpa_gui") "gtk-network.xpm"
-        , TI "dict" "" (spawn "goldendict") "goldendict.xpm"
+        , TI "office" "Documents/" (return ()) "libreoffice34-base.xpm"
         , TI "irc" "" (spawn "xterm -T irssi -e irssi") "irssi.xpm"
-        , TI "diary" "org/" (spawn "emacsclient -c ~/org/`date +%Y-%m-%d`.org") "emacs.xpm"
-        , TI "office" "Documents/" (spawn "libreoffice") "libreoffice34-base.xpm"
+        , TI "mail" "" (spawn "xterm -T mutt -e mutt") "thunderbird.xpm"
+        , TI "dict" "" (spawn "goldendict") "goldendict.xpm"
+        , TI "media" "" (return ()) "imagemagick.xpm"
+        , TI "emacs" "" (spawn "emacsclient -c -n") "emacs.xpm"
+        , TI "net" "" (return ()) "gtk-network.xpm"
         ]
-
