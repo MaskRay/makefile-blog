@@ -8,6 +8,10 @@ POST := layout/post.m4
 TAGS := layout/alltags.m4
 LINKS := layout/links.m4
 
+RSS_HEAD := layout/rss_head.m4
+RSS_ENTRY := layout/rss_entry.m4
+RSS_FOOT := layout/rss_foot.m4
+
 SRCS = $(wildcard $(foreach s,org mdown,$1/*/*.$s))
 HTML = $(addsuffix .html,$(basename $1))
 HTMLS = $(call HTML,$(call SRCS,$1))
@@ -30,8 +34,18 @@ tags/%.m4: tags/all.m4
 
 tags/all.m4: $(foreach m,$(MONTHS),$(call SRCS,$m))
 	$(RM) tags/*.m4
-	for f in $^; do awk "/^#.?TITLE:/{title=gensub(/^\S+\s+/,\"\",\"g\")} /^#.?TAGS:/{tag[1]=\"all\";for(i=2;i<=NF;i++)tag[i]=\$$i} END{for(i in tag){print \"LI(/$${f/%.*/.html},\"title\")\" >> \"tags/\"tag[i]\".m4\"}}" $$f; done
-	[ -f "$@" ] && sort -r $@ > /tmp/temp && mv /tmp/temp $@
+	m4 -D_TIME=`date +%Y-%m-%dT%H-%M-%S+0800` $(RSS_HEAD) > atom.xml;
+	cnt=0; echo $^ | xargs -n1 | sort -r | while read f; do \
+		title=`grep '^#.\?TITLE:' $$f | cut -d' ' -f2-`; \
+		tags=(all `grep '^#.\?TAGS:' $${f/%.phtml/.*} | cut -d' ' -f2-`); \
+		for t in $${tags[@]}; do \
+			echo "LI(/$${f/%.*/.html},$$title)" >> tags/$$t.m4; \
+		done; \
+		if ((++cnt < 10)); then \
+			m4 -P -D_TITLE="$$title" -D_URI=http://maskray.tk/$$f -D_FILE=$${f/%.*/.phtml} $(RSS_ENTRY) >> atom.xml; \
+		fi; \
+	done;
+	m4 $(RSS_FOOT) >> atom.xml
 
 %.phtml:: %.mdown
 	grep -v '^#' $< | markdown /dev/stdin > $@
