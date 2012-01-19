@@ -42,7 +42,7 @@ tags/all.m4: $(foreach m,$(MONTHS),$(call SRCS,$m))
 			echo "LI(/$${f/%.*/.html},$$title)" >> tags/$$t.m4; \
 		done; \
 		if ((++cnt < 10)); then \
-			m4 -P -D_TITLE="$$title" -D_URI=http://maskray.tk/$$f -D_FILE=$${f/%.*/.phtml} $(RSS_ENTRY) >> atom.xml; \
+			m4 -P -D_TITLE="$$title" -D_URI=http://maskray.tk/$${f/%.*/.html} -D_FILE=$${f/%.*/.phtml} $(RSS_ENTRY) >> atom.xml; \
 		fi; \
 	done;
 	m4 $(RSS_FOOT) >> atom.xml
