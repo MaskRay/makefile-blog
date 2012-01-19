@@ -1,0 +1,5 @@
+digraph {
+    screen -> {a[color=violetred] b[color=violetred]};
+    a -> {c[color=darkgreen] d[color=darkgreen]};
+    b -> {e[color=blue] f[color=blue]};
+}

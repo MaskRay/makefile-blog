@@ -1,0 +1,33 @@
+graph {
+//    graph [bgcolor=transparent]
+    edge[style=invis];
+    subgraph cluster0 {
+        rankdir=LR;
+        subgraph cluster1 {
+            color=violetred;
+            rankdir=TB;
+            subgraph cluster2 {
+                color=darkgreen;
+                dummy0[style=invis];
+            }
+            subgraph cluster3 {
+                color=darkgreen;
+                dummy1[style=invis];
+            }
+            dummy0 -- dummy1;
+        }
+        subgraph cluster4 {
+            color=violetred;
+            rankdir=TB;
+            subgraph cluster5 {
+                color=blue;
+                dummy2[style=invis];
+            }
+            subgraph cluster6 {
+                color=blue;
+                dummy3[style=invis];
+            }
+            dummy2 -- dummy3;
+        }
+    }
+}

@@ -1,0 +1,34 @@
+graph {
+    graph [bgcolor=transparent]
+    label="all virtual desktops";
+    rank=same;
+    subgraph cluster_desktop0 {
+        label="desktop0";
+        subgraph cluster_float0 {
+            label="float";
+            w0[color=magenta,label="window0"];
+        }
+        subgraph cluster_layout0 {
+            label="tiling(layout0)";
+            w1[color=darkgreen,label="window1"];
+        }
+    }
+    subgraph cluster_desktop1 {
+        label="desktop1";
+        subgraph cluster_float1 {
+            label="float";
+            w2[color=magenta,label="window0"];
+        }
+        subgraph cluster_layout1 {
+            label="tiling(layout1)";
+            w3[color=blue,label="window2"];
+        }
+    }
+    subgraph cluster_desktop2 {
+        label="desktop2";
+        subgraph cluster_layout2 {
+            label="tiling(layout1)";
+            w4[color=magenta,label="window0"];
+        }
+    }
+}
