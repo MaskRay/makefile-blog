@@ -1,0 +1,16 @@
+#TITLE: Haskell学习笔记
+#TAGS: haskell ocaml
+
+机缘巧合，写了两个用到 `Parsec` 的 `Haskell` 程序。一个是
+[Untyped lambda calculus](https://github.com/MaskRay/hsnippet/tree/master/calculus/untyped)，
+另一个是 [po2db](https://github.com/MaskRay/po2db)。
+`adam8157` 对神器 `Pandoc` 大为赞赏，其实这也是 `Parsec` 的应用。
+`Parsec` 其实也有[不少其他语言的复刻版](http://www.haskell.org/haskellwiki/Parsec#Parsec_clones_in_other_languages)，
+不过不少语言都缺乏 `Haskell` 自定义中缀操作符的功能，实现一个 parser 所写出来的代码会冗长很多。
+还有就是缺乏 `Haskell` 的抽象，最多只能做到形似。
+
+一直以来对 `Haskell` 的 record 没有 first-class syntax 耿耿于怀，直到发现了 `data-lens`，结合 `Template Haskell`，
+对 `record` 的操作也能像一般的函数那样，方便了许多。
+
+`OCaml` 也是门不错的语言，它的实现(似乎只有一个)性能也不错，开发工具也非常齐全(甚至有调试器，相比之下，`ghci` 显得非常初级)。
+学语言最好的方式还是动手，网上的 99 Prolog problems 不错，也有 Lisp 版的，我做了不少，放在[这里](https://github.com/MaskRay/99-problems-ocaml)。

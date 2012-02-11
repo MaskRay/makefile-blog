@@ -29,12 +29,9 @@ tags/%.html: tags/%.m4 $(DEFAULT) $(TAG_POSTS)
 	m4 -P -D_TAG=$* -D_POSTS='m4_include($<)' $(TAG_POSTS) > /tmp/temp
 	m4 -P -D_TAGS=$* -D_TITLE=MaskRay -D_CONTENT='m4_undivert(/tmp/temp)' $(DEFAULT) > $@
 
-tags/%.m4: tags/all.m4
-	sort -r $@ > /tmp/temp && mv /tmp/temp $@
-
 tags/all.m4: $(foreach m,$(MONTHS),$(call SRCS,$m))
 	$(RM) tags/*.m4
-	m4 -D_TIME=`date +%Y-%m-%dT%H-%M-%S+0800` $(RSS_HEAD) > atom.xml;
+	m4 -D_TIME=`date +%FT%H-%M-%S%z` $(RSS_HEAD) > atom.xml;
 	cnt=0; echo $^ | xargs -n1 | sort -r | while read f; do \
 		title=`grep '^#.\?TITLE:' $$f | cut -d' ' -f2-`; \
 		tags=(all `grep '^#.\?TAGS:' $${f/%.phtml/.*} | cut -d' ' -f2-`); \
